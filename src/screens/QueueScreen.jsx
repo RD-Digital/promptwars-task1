@@ -1,99 +1,162 @@
+ 
 import { useState } from 'react';
-import { Coffee, MapPin, Zap, ShoppingBag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, Users, ArrowLeft, Zap, ChevronRight, TrendingDown } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip,
+} from 'recharts';
+import { toast } from 'sonner';
+
+const queues = [
+  { name: 'Security Gate 44', wait: 3,  people: 24, status: 'low',    recommended: true },
+  { name: 'Food Court A',      wait: 8,  people: 56, status: 'medium', recommended: false },
+  { name: 'Merch Store',       wait: 12, people: 78, status: 'high',   recommended: false },
+  { name: 'Restroom Block C',  wait: 2,  people: 8,  status: 'low',    recommended: false },
+];
+
+const chartData = queues.map(q => ({ name: q.name.split(' ').slice(-1)[0], wait: q.wait }));
+
+const STATUS = {
+  low:    { text: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.25)',  label: 'Short',    barColor: '#10b981' },
+  medium: { text: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)',  label: 'Moderate', barColor: '#f59e0b' },
+  high:   { text: '#ef4444', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.25)',   label: 'Long',     barColor: '#ef4444' },
+};
+
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload?.length) {
+    return (
+      <div className="px-3 py-2 rounded-xl text-xs font-bold text-white"
+        style={{ background: 'rgba(14,21,38,0.95)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        {payload[0].value} min wait
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function QueueScreen({ onNavigate }) {
-  const [filter, setFilter] = useState('all'); // all, food, washroom, merch
-
-  const queues = [
-    { id: 1, type: 'food', name: 'Real Madrid Café', wait: 25, status: 'high', distance: '120m' },
-    { id: 2, type: 'food', name: 'Tapas Quick', wait: 5, status: 'low', distance: '150m', aiRecommended: true },
-    { id: 3, type: 'washroom', name: 'Block C Restrooms', wait: 12, status: 'medium', distance: '50m' },
-    { id: 4, type: 'washroom', name: 'Block D Restrooms', wait: 2, status: 'low', distance: '80m', aiRecommended: true },
-    { id: 5, type: 'merch', name: 'Main Megastore', wait: 35, status: 'high', distance: '300m' },
-  ];
-
-  const filtered = filter === 'all' ? queues : queues.filter(q => q.type === filter);
-
-  const getStatusColor = (status) => {
-    if (status === 'low') return 'var(--success-green)';
-    if (status === 'medium') return 'var(--warning-orange)';
-    return 'var(--alert-red)';
-  };
-
   return (
-    <div className="flex flex-col gap-4 screen-content animate-fade-in">
-      <div className="flex justify-between items-center">
-        <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Live Queues</h2>
-      </div>
+    <div className="screen-scroll relative">
+      <div className="orb w-[220px] h-[220px] fixed top-20 -right-10 orb-animate"
+        style={{ background: 'rgba(245,158,11,0.12)', filter: 'blur(80px)' }} />
 
-      {/* Filters */}
-      <div className="flex gap-2" style={{ overflowX: 'auto', paddingBottom: '8px' }}>
-        {['all', 'food', 'washroom', 'merch'].map(f => (
-          <button 
-            key={f}
-            onClick={() => setFilter(f)}
-            className="btn"
-            style={{ 
-              background: filter === f ? 'var(--accent-rm-blue)' : 'transparent',
-              color: filter === f ? 'white' : 'var(--text-muted)',
-              border: filter === f ? 'transparent' : '1px solid var(--surface-border)',
-              padding: '8px 16px',
-              borderRadius: '999px',
-              textTransform: 'capitalize',
-              fontWeight: filter === f ? 700 : 600
-            }}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      {/* List */}
-      <div className="flex flex-col gap-3">
-        {filtered.map(q => (
-          <div key={q.id} className="glass-panel" style={{ padding: '16px', position: 'relative', overflow: 'hidden' }}>
-            {q.aiRecommended && (
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'linear-gradient(to bottom, var(--accent-rm-blue), var(--success-green))' }}></div>
-            )}
-            
-            <div className="flex justify-between items-start">
-              <div className="flex gap-3">
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {q.type === 'food' && <Coffee color="var(--accent-rm-gold)" />}
-                  {q.type === 'washroom' && <MapPin color="var(--accent-rm-blue)" />}
-                  {q.type === 'merch' && <ShoppingBag color="white" />}
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{q.name}</h3>
-                  <div className="text-muted text-sm flex gap-2 items-center">
-                    <span>{q.distance} away</span>
-                    {q.aiRecommended && (
-                       <span className="badge badge-green flex items-center gap-1" style={{ fontSize: '0.65rem' }}>
-                         <Zap size={10} /> AI Pick
-                       </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex flex-col items-end">
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: getStatusColor(q.status) }}>
-                  {q.wait}m
-                </div>
-                <span className="text-muted" style={{ fontSize: '0.75rem' }}>Wait</span>
-              </div>
-            </div>
-
-            {q.status === 'high' && (
-              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--surface-border)' }}>
-                 <p className="text-xs text-muted flex gap-2 items-center">
-                   <Zap size={14} color="var(--accent-rm-blue)" /> 
-                   <span>AI Suggests: <strong style={{color: 'var(--text-main)'}}>Block D Restrooms (2m wait)</strong></span>
-                 </p>
-              </div>
-            )}
+      <div className="px-5 pb-36 pt-4 flex flex-col gap-5">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <motion.button whileTap={{ scale: 0.85 }} onClick={() => onNavigate('home')}
+            className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer border-none"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <ArrowLeft size={16} className="text-white/70" />
+          </motion.button>
+          <div>
+            <h2 className="text-xl font-bold text-white">Live Queues</h2>
+            <p className="text-[11px] text-white/30 font-semibold">Real-time wait estimates</p>
           </div>
-        ))}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            className="ml-auto flex items-center gap-1.5 text-[11px] font-bold border-none cursor-pointer px-3 py-1.5 rounded-full"
+            style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.1)' }}
+            onClick={() => toast.success('Queue data refreshed!')}
+          >
+            <TrendingDown size={12} /> Refresh
+          </motion.button>
+        </div>
+
+        {/* Bar Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass rounded-[22px] p-5"
+        >
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/30 mb-4">Wait Time Comparison</p>
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart data={chartData} barCategoryGap="30%">
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 700 }} />
+              <YAxis hide />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+              <Bar dataKey="wait" radius={[6, 6, 0, 0]}>
+                {queues.map((q, i) => (
+                  <Cell key={i} fill={STATUS[q.status].barColor} opacity={0.85} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </motion.div>
+
+        {/* Queue Cards */}
+        <div className="flex flex-col gap-3">
+          {queues.map((q, i) => {
+            const sc = STATUS[q.status];
+            const barWidth = `${(q.wait / 15) * 100}%`;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -22 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.07, type: 'spring', stiffness: 220 }}
+                className="glass rounded-[20px] p-4 relative overflow-hidden"
+                style={q.recommended ? { border: `1px solid ${sc.border}`, boxShadow: `0 0 20px ${sc.bg}` } : {}}
+              >
+                {q.recommended && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/[0.08] to-transparent" />
+                )}
+                <div className="relative z-10 flex items-center gap-4">
+                  <div className="p-3 rounded-xl" style={{ background: sc.bg, border: `1px solid ${sc.border}` }}>
+                    <Clock size={20} style={{ color: sc.text }} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h4 className="text-[15px] font-bold text-white">{q.name}</h4>
+                      {q.recommended && (
+                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
+                          style={{ color: '#10b981', background: 'rgba(16,185,129,0.15)' }}>
+                          Best
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-[11px] text-white/30 flex items-center gap-1">
+                        <Clock size={9} /> ~{q.wait} min
+                      </span>
+                      <span className="text-[11px] text-white/30 flex items-center gap-1">
+                        <Users size={9} /> {q.people} in line
+                      </span>
+                    </div>
+                    {/* Animated progress bar */}
+                    <div className="progress-track">
+                      <motion.div
+                        className="progress-fill"
+                        initial={{ width: 0 }}
+                        animate={{ width: barWidth }}
+                        transition={{ duration: 1.2, ease: 'easeOut', delay: i * 0.1 }}
+                        style={{ background: sc.text, boxShadow: `0 0 8px ${sc.text}60` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
+                    style={{ color: sc.text, background: sc.bg, border: `1px solid ${sc.border}` }}>
+                    {sc.label}
+                  </span>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Fast Track CTA */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => onNavigate('skipqueue')}
+          className="w-full font-bold py-4 rounded-2xl text-sm border-none cursor-pointer flex items-center justify-center gap-2 btn-shimmer"
+          style={{
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            color: '#0a0e1a',
+            boxShadow: '0 0 30px rgba(245,158,11,0.3)',
+          }}
+        >
+          <Zap size={16} /> Skip the Queue · Fast Track Entry
+        </motion.button>
       </div>
     </div>
   );

@@ -1,96 +1,154 @@
+ 
 import { useState } from 'react';
-import { Car, Bike, Info, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Car, Clock, ArrowLeft, Navigation, Check } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { toast } from 'sonner';
+
+const spots = [
+  { id: 'P3-A1', section: 'P3 North', distance: 3, available: true },
+  { id: 'P3-A2', section: 'P3 North', distance: 3, available: true },
+  { id: 'P3-B1', section: 'P3 North', distance: 4, available: false },
+  { id: 'B1-A1', section: 'B1 West',  distance: 6, available: true },
+  { id: 'B1-A2', section: 'B1 West',  distance: 6, available: false },
+  { id: 'B1-B1', section: 'B1 West',  distance: 7, available: true },
+];
+
+const available = spots.filter(s => s.available).length;
+const occupied  = spots.filter(s => !s.available).length;
+const total     = spots.length;
+
+const PIE_DATA = [
+  { name: 'Available', value: available, color: '#10b981' },
+  { name: 'Occupied',  value: occupied,  color: '#ef4444' },
+];
 
 export default function ParkingScreen({ onNavigate }) {
-  const [vehicle, setVehicle] = useState('4w'); // 4w or 2w
+  const [reserved, setReserved] = useState(null);
 
-  const stats = {
-    '4w': { total: 4500, engaged: 3820, vacant: 450, exiting: 230 },
-    '2w': { total: 1200, engaged: 850, vacant: 300, exiting: 50 }
+  const handleReserve = (spot) => {
+    setReserved(spot.id);
+    toast.success(`🅿️ Reserved ${spot.id} — navigating to spot!`);
   };
 
-  const currentStats = stats[vehicle];
-  const fillPercentage = (currentStats.engaged / currentStats.total) * 100;
-
   return (
-    <div className="flex flex-col gap-4 screen-content animate-fade-in" style={{ paddingBottom: '120px' }}>
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-        <h2 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--text-main)' }}>Smart Parking</h2>
-        <Car size={24} color="var(--accent-rm-blue)" />
-      </div>
+    <div className="screen-scroll relative">
+      <div className="orb w-[240px] h-[240px] fixed top-14 -right-10 orb-animate"
+        style={{ background: 'rgba(59,130,246,0.14)', filter: 'blur(80px)' }} />
 
-      {/* Vehicle Toggle */}
-      <div className="flex" style={{ width: '100%', background: 'white', borderRadius: '16px', padding: '6px', border: '2px solid var(--surface-border)', boxShadow: '0 4px 10px rgba(0,0,0,0.02)' }}>
-        <button 
-          onClick={() => setVehicle('4w')}
-          className="flex-1 py-3 flex justify-center items-center gap-2 rounded-xl transition-all"
-          style={{ background: vehicle === '4w' ? 'var(--text-main)' : 'transparent', color: vehicle === '4w' ? 'white' : 'var(--text-muted)', fontWeight: 800, border: 'none' }}
-        >
-          <Car size={20} /> 4-Wheelers
-        </button>
-        <button 
-          onClick={() => setVehicle('2w')}
-          className="flex-1 py-3 flex justify-center items-center gap-2 rounded-xl transition-all"
-          style={{ background: vehicle === '2w' ? 'var(--text-main)' : 'transparent', color: vehicle === '2w' ? 'white' : 'var(--text-muted)', fontWeight: 800, border: 'none' }}
-        >
-          <Bike size={20} /> 2-Wheelers
-        </button>
-      </div>
-
-      {/* Real-time Capacity Gauge */}
-      <div className="glass-panel text-center" style={{ padding: '40px 20px', background: 'white' }}>
-        <h3 className="text-muted text-sm uppercase tracking-widest mb-6 font-bold" style={{color: 'var(--text-main)'}}>Real-Time Capacity</h3>
-        
-        <div style={{ position: 'relative', width: '220px', height: '110px', margin: '0 auto', overflow: 'hidden' }}>
-          {/* Semi-circle track */}
-          <div style={{ width: '220px', height: '220px', borderRadius: '50%', border: '24px solid var(--surface-border)', position: 'absolute', top: 0, boxSizing: 'border-box' }}></div>
-          {/* Active fill */}
-          <div style={{ width: '220px', height: '220px', borderRadius: '50%', border: '24px solid var(--accent-rm-blue)', borderBottomColor: 'transparent', borderRightColor: 'transparent', position: 'absolute', top: 0, boxSizing: 'border-box', transform: `rotate(${(fillPercentage / 100) * 180 - 135}deg)`, transition: 'transform 1.5s cubic-bezier(0.16, 1, 0.3, 1)' }}></div>
-          
-          <div style={{ position: 'absolute', bottom: 0, width: '100%', textAlign: 'center' }}>
-            <span style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.05em' }}>{Math.round(fillPercentage)}%</span>
+      <div className="px-5 pb-36 pt-4 flex flex-col gap-5">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <motion.button whileTap={{ scale: 0.85 }} onClick={() => onNavigate('home')}
+            className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer border-none"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <ArrowLeft size={16} className="text-white/70" />
+          </motion.button>
+          <div>
+            <h2 className="text-xl font-bold text-white">Parking</h2>
+            <p className="text-[11px] text-white/30 font-semibold">Real-time availability</p>
           </div>
         </div>
 
-        <div className="flex justify-between mt-8 px-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div className="flex flex-col items-center">
-            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--success-green)' }}>{currentStats.vacant}</span>
-            <span className="text-muted text-xs font-bold uppercase tracking-wider">Vacant</span>
+        {/* Donut Chart Summary */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.93 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="glass rounded-[24px] p-6 flex items-center gap-6"
+        >
+          <div style={{ width: 110, height: 110, flexShrink: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={PIE_DATA}
+                  cx="50%" cy="50%"
+                  innerRadius={32} outerRadius={50}
+                  startAngle={90} endAngle={-270}
+                  dataKey="value"
+                  strokeWidth={0}
+                  animationBegin={200}
+                  animationDuration={1200}
+                >
+                  {PIE_DATA.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-          <div className="flex flex-col items-center">
-            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-rm-blue)' }}>{currentStats.engaged}</span>
-            <span className="text-muted text-xs font-bold uppercase tracking-wider">Engaged</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--warning-orange)' }}>{currentStats.exiting}</span>
-            <span className="text-muted text-xs font-bold uppercase tracking-wider">Exiting</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Zone Routing */}
-      <h3 style={{ fontSize: '1.2rem', marginTop: '16px', color: 'var(--text-main)' }}>Recommended Parking</h3>
-      <div className="glass-panel flex justify-between items-center bg-white border border-slate-200" style={{ padding: '20px' }}>
-          <div className="flex items-center gap-4">
-            <div style={{ padding: '14px', background: 'var(--accent-rm-blue-light)', borderRadius: '16px', boxShadow: '0 4px 12px rgba(30,58,138,0.2)' }}>
-              <Car size={28} color="white" />
+          <div className="flex-1">
+            <div className="mb-3">
+              <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-white/30 mb-1">Available Spots</p>
+              <p className="text-4xl font-black" style={{ color: '#10b981', textShadow: '0 0 20px rgba(16,185,129,0.3)' }}>
+                {0}
+                <span className="text-white/25 text-xl ml-1">/ {total}</span>
+              </p>
             </div>
-            <div>
-              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)' }}>Sector {vehicle === '4w' ? 'P3 (North)' : 'B1 (West)'}</span>
-              <div style={{ fontSize: '0.9rem', color: 'var(--success-green)', fontWeight: 700, marginTop: '2px' }}>Highest vacancy right now</div>
+            <div className="flex gap-3">
+              {PIE_DATA.map((d, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full" style={{ background: d.color }} />
+                  <span className="text-[11px] text-white/40 font-semibold">{d.name}</span>
+                </div>
+              ))}
             </div>
           </div>
-      </div>
+        </motion.div>
 
-      <button className="btn btn-primary w-full mt-2 py-4 text-lg" onClick={() => onNavigate('map', vehicle === '4w' ? 'parking-p3' : 'parking-b1')} style={{ padding: '16px', borderRadius: '16px', fontSize: '1.1rem' }}>
-         Get Route <ArrowRight size={20} />
-      </button>
-
-      <div className="flex items-start gap-3 mt-4 text-sm font-medium bg-white p-4 rounded-xl border border-slate-200">
-         <Info size={20} color="var(--accent-rm-blue)" style={{ flexShrink: 0, marginTop: '2px' }} />
-         <p style={{color: 'var(--text-main)', margin: 0}}>Dynamic parking routing ensures you are directed to the sector with the fastest exit time relative to your seat.</p>
+        {/* Sections */}
+        {['P3 North', 'B1 West'].map((section, sIdx) => {
+          const sectionSpots = spots.filter(s => s.section === section);
+          return (
+            <div key={sIdx}>
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white/25 mb-3">{section}</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {sectionSpots.map((spot, i) => (
+                  <motion.div
+                    key={spot.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: (sIdx * 3 + i) * 0.06 }}
+                    className="glass rounded-[18px] p-4"
+                    style={{
+                      opacity: spot.available ? 1 : 0.4,
+                      border: reserved === spot.id ? '1px solid rgba(16,185,129,0.5)' : spot.available ? '1px solid rgba(16,185,129,0.15)' : 'auto',
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-lg font-black text-white">{spot.id}</h4>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: spot.available ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)' }}>
+                        <div className="w-2 h-2 rounded-full" style={{ background: spot.available ? '#10b981' : '#ef4444' }} />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-white/20 mb-3 flex items-center gap-1">
+                      <Clock size={9} /> {spot.distance} min walk
+                    </p>
+                    {spot.available && reserved !== spot.id && (
+                      <motion.button
+                        whileTap={{ scale: 0.92 }}
+                        onClick={() => handleReserve(spot)}
+                        className="w-full flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-xl border-none cursor-pointer"
+                        style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}
+                      >
+                        <Navigation size={10} /> Navigate
+                      </motion.button>
+                    )}
+                    {reserved === spot.id && (
+                      <div className="flex items-center justify-center gap-1 text-[10px] font-bold"
+                        style={{ color: '#10b981' }}>
+                        <Check size={11} /> Reserved!
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      
     </div>
   );
 }
