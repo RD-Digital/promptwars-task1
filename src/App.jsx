@@ -1,28 +1,26 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'sonner';
 import './index.css';
 import TopBar from './components/TopBar';
 import BottomNav from './components/BottomNav';
 import AIAssistant from './components/AIAssistant';
+import { ErrorBoundary } from './ErrorBoundary';
 
-import OnboardingScreen from './screens/OnboardingScreen';
-import HomeScreen from './screens/HomeScreen';
-import MapScreen from './screens/MapScreen';
-import QueueScreen from './screens/QueueScreen';
-import ParkingScreen from './screens/ParkingScreen';
-import AlertsScreen from './screens/AlertsScreen';
-import EmergencyScreen from './screens/EmergencyScreen';
-
-// V4 Extensions
-import TicketScreen from './screens/TicketScreen';
-import SeatAssistScreen from './screens/SeatAssistScreen';
-import SkipQueueScreen from './screens/SkipQueueScreen';
-import TransportScreen from './screens/TransportScreen';
-import CabBookingScreen from './screens/CabBookingScreen';
-import PostEventScreen from './screens/PostEventScreen';
-
-const NAV_ORDER = ['home','map','transport','queue','emergency'];
+// Lazy load screens for better performance
+const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen'));
+const HomeScreen = lazy(() => import('./screens/HomeScreen'));
+const MapScreen = lazy(() => import('./screens/MapScreen'));
+const QueueScreen = lazy(() => import('./screens/QueueScreen'));
+const ParkingScreen = lazy(() => import('./screens/ParkingScreen'));
+const AlertsScreen = lazy(() => import('./screens/AlertsScreen'));
+const EmergencyScreen = lazy(() => import('./screens/EmergencyScreen'));
+const TicketScreen = lazy(() => import('./screens/TicketScreen'));
+const SeatAssistScreen = lazy(() => import('./screens/SeatAssistScreen'));
+const SkipQueueScreen = lazy(() => import('./screens/SkipQueueScreen'));
+const TransportScreen = lazy(() => import('./screens/TransportScreen'));
+const CabBookingScreen = lazy(() => import('./screens/CabBookingScreen'));
+const PostEventScreen = lazy(() => import('./screens/PostEventScreen'));
 
 const pageVariants = {
   initial: { opacity: 0, y: 18, scale: 0.97 },
@@ -30,15 +28,27 @@ const pageVariants = {
   exit:    { opacity: 0, y: -10, scale: 0.98, transition: { duration: 0.2, ease: 'easeIn' } },
 };
 
+function LoadingFallback() {
+  return (
+    <div className="w-full h-screen flex items-center justify-center bg-[#060a13]">
+      <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+    </div>
+  );
+}
+
 function App() {
   const [currentScreen, setCurrentScreen] = useState('onboarding');
   const [mapTarget, setMapTarget] = useState(null);
   const prevScreen = useRef('onboarding');
 
   const navigateTo = (screenId, target = null) => {
-    if (target) setMapTarget(target);
-    prevScreen.current = currentScreen;
-    setCurrentScreen(screenId);
+    try {
+      if (target) setMapTarget(target);
+      prevScreen.current = currentScreen;
+      setCurrentScreen(screenId);
+    } catch (err) {
+      console.error("Navigation error:", err);
+    }
   };
 
   const renderScreen = () => {
@@ -63,40 +73,44 @@ function App() {
   const showNav = currentScreen !== 'onboarding';
 
   return (
-    <div className="mobile-container">
-      <Toaster
-        position="bottom-center"
-        toastOptions={{
-          style: {
-            background: 'rgba(14,21,38,0.95)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'white',
-            borderRadius: '16px',
-            backdropFilter: 'blur(20px)',
-            fontSize: '13px',
-            fontWeight: '600',
-          },
-        }}
-      />
+    <ErrorBoundary>
+      <div className="mobile-container">
+        <Toaster
+          position="bottom-center"
+          toastOptions={{
+            style: {
+              background: 'rgba(14,21,38,0.95)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'white',
+              borderRadius: '16px',
+              backdropFilter: 'blur(20px)',
+              fontSize: '13px',
+              fontWeight: '600',
+            },
+          }}
+        />
 
-      {showNav && <TopBar onNavigate={navigateTo} />}
+        {showNav && <TopBar onNavigate={navigateTo} />}
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentScreen}
-          variants={pageVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          style={{ position: 'relative', width: '100%' }}
-        >
-          {renderScreen()}
-        </motion.div>
-      </AnimatePresence>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentScreen}
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            style={{ position: 'relative', width: '100%' }}
+          >
+            <Suspense fallback={<LoadingFallback />}>
+              {renderScreen()}
+            </Suspense>
+          </motion.div>
+        </AnimatePresence>
 
-      {showNav && <AIAssistant onNavigate={navigateTo} />}
-      {showNav && <BottomNav current={currentScreen} onNavigate={(id) => navigateTo(id)} />}
-    </div>
+        {showNav && <AIAssistant onNavigate={navigateTo} />}
+        {showNav && <BottomNav current={currentScreen} onNavigate={(id) => navigateTo(id)} />}
+      </div>
+    </ErrorBoundary>
   );
 }
 

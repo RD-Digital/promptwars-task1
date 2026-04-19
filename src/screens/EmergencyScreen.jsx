@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, Shield, Navigation, Siren, MapPin, ArrowLeft, Users, CheckCircle } from 'lucide-react';
+import { Phone, Navigation, Siren, MapPin, ArrowLeft, Users, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function EmergencyScreen({ onNavigate }) {
@@ -11,7 +11,6 @@ export default function EmergencyScreen({ onNavigate }) {
   useEffect(() => {
     if (!sosActive || dispatched) return;
     if (countdown <= 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDispatched(true);
       toast.error('🚨 SOS signal sent to Stadium Security!', { duration: 5000 });
       return;
@@ -24,6 +23,7 @@ export default function EmergencyScreen({ onNavigate }) {
     setSosActive(true);
     setCountdown(5);
     setDispatched(false);
+    toast('SOS signal sequence started...', { icon: '🚨' });
   };
 
   const handleCancel = () => {
@@ -40,139 +40,153 @@ export default function EmergencyScreen({ onNavigate }) {
   ];
 
   return (
-    <div className="screen-scroll relative">
-      <div className="orb w-[320px] h-[320px] fixed -top-20 left-1/2 -translate-x-1/2"
-        style={{ background: 'rgba(239,68,68,0.15)', filter: 'blur(90px)' }} />
+    <main className="screen-scroll relative" id="emergency-screen">
+      <div className="orb w-[320px] h-[320px] fixed -top-20 left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{ background: 'rgba(239,68,68,0.15)', filter: 'blur(90px)' }} aria-hidden="true" />
 
       <div className="px-5 pb-36 pt-4 flex flex-col gap-5">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <motion.button whileTap={{ scale: 0.85 }} onClick={() => onNavigate('home')}
+        <header className="flex items-center gap-3">
+          <motion.button 
+            whileTap={{ scale: 0.85 }} 
+            onClick={() => onNavigate('home')}
             className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer border-none"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <ArrowLeft size={16} className="text-white/70" />
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+            aria-label="Back to Home"
+          >
+            <ArrowLeft size={16} className="text-white/70" aria-hidden="true" />
           </motion.button>
           <div>
-            <h2 className="text-xl font-bold text-white">Emergency</h2>
-            <p className="text-[11px] font-semibold" style={{ color: '#ef4444' }}>SOS Safety Center</p>
+            <h1 className="text-xl font-bold text-white">Emergency Center</h1>
+            <p className="text-[11px] font-semibold text-[#ef4444]" aria-label="SOS Safety Center active">SOS Safety Center</p>
           </div>
-        </div>
+        </header>
 
-        {/* SOS Button with concentric rings */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center py-8 relative"
-        >
+        {/* SOS Button section */}
+        <section className="flex flex-col items-center py-8 relative" aria-label="SOS Control">
           {/* Ring layers */}
           {!dispatched && (
-            <>
-              <div className="absolute w-40 h-40 rounded-full border border-red-500/20 sos-ring-1" />
-              <div className="absolute w-48 h-48 rounded-full border border-red-500/15 sos-ring-2" />
-              <div className="absolute w-56 h-56 rounded-full border border-red-500/10 sos-ring-3" />
-            </>
+            <div className="pointer-events-none" aria-hidden="true">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border border-red-500/20 sos-ring-1" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full border border-red-500/15 sos-ring-2" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full border border-red-500/10 sos-ring-3" />
+            </div>
           )}
 
-          <AnimatePresence mode="wait">
-            {!sosActive && !dispatched ? (
-              <motion.button
-                key="sos-btn"
-                whileHover={{ scale: 1.06 }}
-                whileTap={{ scale: 0.92 }}
-                onClick={handleSOS}
-                className="relative w-28 h-28 rounded-full flex items-center justify-center border-none cursor-pointer"
-                style={{
-                  background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
-                  boxShadow: '0 0 60px rgba(239,68,68,0.45), 0 0 120px rgba(239,68,68,0.2)',
-                }}
-                animate={{ boxShadow: [
-                  '0 0 40px rgba(239,68,68,0.35)',
-                  '0 0 80px rgba(239,68,68,0.6)',
-                  '0 0 40px rgba(239,68,68,0.35)',
-                ]}}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Siren size={44} className="text-white" />
-              </motion.button>
-            ) : sosActive && !dispatched ? (
-              <motion.div
-                key="countdown"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center gap-4"
-              >
-                <div className="relative w-28 h-28">
-                  <svg className="absolute inset-0 -rotate-90" viewBox="0 0 112 112">
-                    <circle cx="56" cy="56" r="50" fill="none" stroke="rgba(239,68,68,0.15)" strokeWidth="4" />
-                    <motion.circle
-                      cx="56" cy="56" r="50" fill="none" stroke="#ef4444" strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeDasharray={314}
-                      animate={{ strokeDashoffset: 314 - (314 * (countdown / 5)) }}
-                      transition={{ duration: 1, ease: 'linear' }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center flex-col">
-                    <span className="text-5xl font-black text-white">{countdown}</span>
-                    <span className="text-[10px] text-white/40 font-bold">SENDING</span>
-                  </div>
-                </div>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={handleCancel}
-                  className="text-white/40 text-sm font-bold bg-transparent border-none cursor-pointer underline">
-                  Cancel SOS
+          <div className="relative z-10 min-h-[140px] flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              {!sosActive && !dispatched ? (
+                <motion.button
+                  key="sos-btn"
+                  whileHover={{ scale: 1.06 }}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={handleSOS}
+                  className="w-28 h-28 rounded-full flex items-center justify-center border-none cursor-pointer"
+                  style={{
+                    background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+                    boxShadow: '0 0 60px rgba(239,68,68,0.45)',
+                  }}
+                  animate={{ boxShadow: [
+                    '0 0 40px rgba(239,68,68,0.35)',
+                    '0 0 80px rgba(239,68,68,0.6)',
+                    '0 0 40px rgba(239,68,68,0.35)',
+                  ]}}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  aria-label="Send SOS Signal. Tap to start countdown."
+                >
+                  <Siren size={44} className="text-white" aria-hidden="true" />
                 </motion.button>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="dispatched"
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center gap-3"
-              >
-                <div className="w-24 h-24 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(16,185,129,0.2)', border: '2px solid rgba(16,185,129,0.4)' }}>
-                  <CheckCircle size={44} style={{ color: '#10b981' }} />
-                </div>
-                <p className="text-sm font-bold" style={{ color: '#10b981' }}>Security Dispatched!</p>
-                <p className="text-xs text-white/30">ETA: ~2 minutes</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              ) : sosActive && !dispatched ? (
+                <motion.div
+                  key="countdown"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex flex-col items-center gap-4"
+                  role="timer"
+                  aria-live="assertive"
+                  aria-label={`SOS signal sending in ${countdown} seconds`}
+                >
+                  <div className="relative w-28 h-28">
+                    <svg className="absolute inset-0 -rotate-90" viewBox="0 0 112 112" aria-hidden="true">
+                      <circle cx="56" cy="56" r="50" fill="none" stroke="rgba(239,68,68,0.15)" strokeWidth="4" />
+                      <motion.circle
+                        cx="56" cy="56" r="50" fill="none" stroke="#ef4444" strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeDasharray={314}
+                        animate={{ strokeDashoffset: 314 - (314 * (countdown / 5)) }}
+                        transition={{ duration: 1, ease: 'linear' }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center flex-col">
+                      <span className="text-5xl font-black text-white">{countdown}</span>
+                      <span className="text-[10px] text-white/40 font-bold">SENDING</span>
+                    </div>
+                  </div>
+                  <motion.button 
+                    whileTap={{ scale: 0.95 }} 
+                    onClick={handleCancel}
+                    className="text-white/40 text-sm font-bold bg-transparent border-none cursor-pointer underline p-2"
+                    aria-label="Cancel SOS signal"
+                  >
+                    Cancel SOS
+                  </motion.button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="dispatched"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex flex-col items-center gap-3"
+                  aria-live="polite"
+                >
+                  <div className="w-24 h-24 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(16,185,129,0.2)', border: '2px solid rgba(16,185,129,0.4)' }}>
+                    <CheckCircle size={44} style={{ color: '#10b981' }} aria-hidden="true" />
+                  </div>
+                  <h2 className="text-sm font-bold text-[#10b981]">Security Dispatched!</h2>
+                  <p className="text-xs text-white/30">ETA: ~2 minutes</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-          <p className="text-sm text-white/30 font-semibold mt-5">
-            {!sosActive ? 'Hold to send SOS signal' : dispatched ? '' : 'Sending in...'}
+          <p className="text-sm text-white/30 font-semibold mt-5" aria-hidden="true">
+            {!sosActive ? 'Tap to send SOS signal' : dispatched ? '' : 'Sending soon...'}
           </p>
-        </motion.div>
+        </section>
 
-        {/* Quick Actions */}
-        <div className="flex flex-col gap-3">
-          {actions.map((item, i) => (
-            <motion.button
-              key={i}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.07, type: 'spring', stiffness: 220 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={item.action}
-              className="glass rounded-[20px] p-4 flex items-center gap-4 border-none cursor-pointer text-left w-full"
-              style={{ backdropFilter: 'blur(40px)' }}
-            >
-              <div className="p-3 rounded-xl"
-                style={{ background: `${item.color}18`, border: `1px solid ${item.color}30` }}>
-                <item.icon size={21} style={{ color: item.color }} />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-[15px] font-bold text-white">{item.title}</h4>
-                <p className="text-[11px] text-white/30 mt-0.5">{item.sub}</p>
-              </div>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(255,255,255,0.06)' }}>
-                <ArrowLeft size={13} className="text-white/30 rotate-180" />
-              </div>
-            </motion.button>
-          ))}
-        </div>
+        {/* Quick Help Actions */}
+        <section aria-label="Emergency Quick Actions">
+          <div className="flex flex-col gap-3">
+            {actions.map((item, i) => (
+              <motion.button
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.07, type: 'spring', stiffness: 220 }}
+                whileHover={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
+                whileTap={{ scale: 0.97 }}
+                onClick={item.action}
+                className="glass rounded-[20px] p-4 flex items-center gap-4 border-none cursor-pointer text-left w-full"
+                aria-label={`${item.title}: ${item.sub}`}
+              >
+                <div className="p-3 rounded-xl"
+                  style={{ background: `${item.color}18`, border: `1px solid ${item.color}30` }}>
+                  <item.icon size={21} style={{ color: item.color }} aria-hidden="true" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-[15px] font-bold text-white">{item.title}</h3>
+                  <p className="text-[11px] text-white/30 mt-0.5">{item.sub}</p>
+                </div>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <ArrowLeft size={13} className="text-white/30 rotate-180" aria-hidden="true" />
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
