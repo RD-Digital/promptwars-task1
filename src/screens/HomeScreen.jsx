@@ -13,6 +13,7 @@ import {
 import { useCrowdData } from '../hooks/useCrowdData';
 import { useCountdownTimer } from '../hooks/useCountdownTimer';
 import heroImg from '../assets/hero.png';
+import { logUserEvent } from '../services/firebaseService';
 
 // Lightweight SVG sparkline
 function SparkLine({ data, color = '#10b981' }) {
@@ -67,6 +68,11 @@ export default function HomeScreen({ onNavigate }) {
   const handleMouseLeave = () => setTiltStyle({});
 
   const pad = (n) => String(n).padStart(2, '0');
+
+  const handleQuickNavigation = (screen, buttonName) => {
+    if(buttonName) logUserEvent('user_interaction', { button: buttonName });
+    onNavigate(screen);
+  };
 
   const quickActions = [
     { icon: Ticket, label: 'My Ticket', screen: 'ticket', grad: 'rgba(59,130,246,0.2)', glow: '#3b82f6', iColor: '#3b82f6' },
@@ -145,7 +151,7 @@ export default function HomeScreen({ onNavigate }) {
               <motion.button
                 whileHover={{ scale: 1.08, rotate: 2 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onNavigate('ticket')}
+                onClick={() => handleQuickNavigation('ticket', 'Show Ticket')}
                 className="cursor-pointer bg-white p-2.5 rounded-2xl shrink-0 border-none"
                 style={{ boxShadow: '0 0 30px rgba(255,255,255,0.2)' }}
                 aria-label="Show Digital Ticket QR Code"
@@ -180,7 +186,7 @@ export default function HomeScreen({ onNavigate }) {
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                 className="flex-1 font-bold py-3.5 rounded-2xl text-sm tracking-wide border-none cursor-pointer flex items-center justify-center gap-2"
                 style={{ background: 'white', color: '#060a13' }}
-                onClick={() => onNavigate('ticket')}
+                onClick={() => handleQuickNavigation('ticket', 'Show Ticket')}
                 aria-label="Go to My Ticket"
               >
                 <Ticket size={15} aria-hidden="true" /> View Ticket
@@ -193,7 +199,7 @@ export default function HomeScreen({ onNavigate }) {
                   color: '#f59e0b',
                   border: '1px solid rgba(245,158,11,0.3)',
                 }}
-                onClick={() => onNavigate('skipqueue')}
+                onClick={() => handleQuickNavigation('skipqueue', 'Fast Track')}
                 aria-label="Go to Fast Track Services"
               >
                 <Zap size={15} aria-hidden="true" /> Fast Track

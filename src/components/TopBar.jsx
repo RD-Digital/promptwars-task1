@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, User, X, Ticket, Activity, HelpCircle, Tag, ChevronRight, Zap } from 'lucide-react';
+import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth, provider } from '../lib/firebase';
+import { logUserEvent } from '../services/firebaseService';
 
 const SCORE_STATES = [
   { home: 2, away: 0, minute: "67'" },
@@ -13,6 +16,36 @@ export default function TopBar({ onNavigate }) {
   const [showProfile, setShowProfile] = useState(false);
   const [scoreIdx, setScoreIdx] = useState(0);
   const [unreadCount, setUnreadCount] = useState(4);
+  const [authUser, setAuthUser] = useState(null);
+
+  useEffect(() => {
+    if (!auth) return;
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    if (!auth || !provider) {
+       console.warn('Auth missing. Continuing in guest mode.');
+       return;
+    }
+    try {
+      await signInWithPopup(auth, provider);
+      logUserEvent('user_interaction', { button: 'Google Login', status: 'success' });
+    } catch (error) {
+      console.warn("Login failed, falling back to guest mode.", error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      logUserEvent('user_interaction', { button: 'Sign Out' });
+    } catch (e) { console.warn(e); }
+  };
 
   // Live score ticker
   useEffect(() => {
@@ -209,9 +242,13 @@ export default function TopBar({ onNavigate }) {
               {/* Avatar */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden"
                     style={{ background: 'linear-gradient(135deg, #3b82f6, #22d3ee)' }}>
-                    <User size={28} className="text-white" />
+                    {authUser?.photoURL ? (
+                       <img src={authUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                       <User size={28} className="text-white" />
+                    )}
                   </div>
                   <motion.div
                     className="absolute inset-[-3px] rounded-[18px]"
@@ -221,10 +258,21 @@ export default function TopBar({ onNavigate }) {
                   />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Alex Madridista</h3>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-neon-gold bg-neon-gold/[0.12] px-3 py-1 rounded-full mt-1 inline-block">
-                    Premium Member
-                  </span>
+                  {authUser ? (
+                    <>
+                      <h3 className="text-lg font-bold text-white">{authUser.displayName}</h3>
+                      <button onClick={handleSignOut} className="text-[10px] font-bold tracking-[0.15em] text-white/50 bg-white/5 border border-white/10 px-3 py-1 rounded-full mt-1 cursor-pointer">
+                        Sign Out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-bold text-white mb-1">Guest Mode</h3>
+                      <button onClick={handleGoogleLogin} className="text-[11px] uppercase tracking-wider font-bold bg-white text-black px-4 py-1.5 rounded-full border-none cursor-pointer">
+                        Sign In with Google
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

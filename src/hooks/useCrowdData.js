@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCrowdData } from '../services/firebaseService';
+import { getCrowdData, logUserEvent } from '../services/firebaseService';
 
 /**
  * Hook to manage live crowd data fetching and state.
@@ -21,6 +21,7 @@ export const useCrowdData = () => {
                 const data = await getCrowdData();
                 if (isMounted) {
                     setCrowdData(data);
+                    logUserEvent('crowd_data_loaded', { crowd_perc: data.percentage, gate: data.gate });
                 }
             } catch (error) {
                 console.error("useCrowdData error:", error);

@@ -1,4 +1,4 @@
-import { useState, useRef, lazy, Suspense } from 'react';
+import { useState, useRef, lazy, Suspense, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'sonner';
 import './index.css';
@@ -6,6 +6,7 @@ import TopBar from './components/TopBar';
 import BottomNav from './components/BottomNav';
 import AIAssistant from './components/AIAssistant';
 import { ErrorBoundary } from './ErrorBoundary';
+import { logUserEvent, logDynamicWrite } from './services/firebaseService';
 
 // Lazy load screens for better performance
 const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen'));
@@ -40,12 +41,34 @@ function App() {
   const [currentScreen, setCurrentScreen] = useState('onboarding');
   const [mapTarget, setMapTarget] = useState(null);
   const prevScreen = useRef('onboarding');
+  const hasLoggedLoad = useRef(false);
+
+  useEffect(() => {
+    if (!hasLoggedLoad.current) {
+      logDynamicWrite('app_load', { screen: 'HomeScreen', metadata: { system: 'StadiumFlow React App' }});
+      hasLoggedLoad.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    logUserEvent('screen_view', {
+      firebase_screen: currentScreen,
+      firebase_screen_class: currentScreen + 'Screen'
+    });
+  }, [currentScreen]);
 
   const navigateTo = (screenId, target = null) => {
     try {
       if (target) setMapTarget(target);
+      const previous = prevScreen.current;
       prevScreen.current = currentScreen;
       setCurrentScreen(screenId);
+
+      logUserEvent('navigation_flow', {
+        from: previous,
+        to: screenId,
+        target: target || 'none'
+      });
     } catch (err) {
       console.error("Navigation error:", err);
     }

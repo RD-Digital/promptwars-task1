@@ -7,9 +7,11 @@ import {
   AdvancedMarker, 
   Pin, 
   useMap,
+  useMapsLibrary,
   MapControl,
   ControlPosition
 } from '@vis.gl/react-google-maps';
+import { logUserEvent } from '../services/firebaseService';
 
 const STADIUM_COORDS = { lat: 40.453053, lng: -3.688331 };
 
@@ -36,12 +38,14 @@ const initialHotspots = [
 
 function RoutePolyline({ origin, destination, visible }) {
   const map = useMap();
+  const maps = useMapsLibrary('maps');
+  
   useEffect(() => {
-    if (!map || !visible || !origin || !destination) return;
+    if (!map || !visible || !origin || !destination || !maps) return;
 
-    // Mock polyline implementation using Google Maps Polyline
+    // Polyline implementation using Google Maps Polyline
     const path = [origin, destination];
-    const polyline = new window.google.maps.Polyline({
+    const polyline = new maps.Polyline({
       path: path,
       geodesic: true,
       strokeColor: "#3b82f6",
@@ -51,7 +55,7 @@ function RoutePolyline({ origin, destination, visible }) {
     });
 
     return () => polyline.setMap(null);
-  }, [map, origin, destination, visible]);
+  }, [map, maps, origin, destination, visible]);
 
   return null;
 }
@@ -87,6 +91,12 @@ export default function MapScreen({ routeTarget, onRouteClear, onNavigate }) {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleStartNavigation = () => {
+    logUserEvent('user_interaction', { button: 'Start Navigation', target: activeHotspot?.name });
+    setIsRouting(true); 
+    if (onRouteClear) onRouteClear();
+  };
 
   return (
     <main className="screen-scroll relative px-5 pb-32 pt-4 flex flex-col gap-5">
@@ -222,7 +232,7 @@ export default function MapScreen({ routeTarget, onRouteClear, onNavigate }) {
                   whileTap={{ scale: 0.97 }}
                   className="w-full py-3.5 rounded-2xl font-bold text-sm text-white border-none cursor-pointer flex items-center justify-center gap-2"
                   style={{ backgroundColor: getColor(activeHotspot.crowd) }}
-                  onClick={() => { setIsRouting(true); if (onRouteClear) onRouteClear(); }}
+                  onClick={handleStartNavigation}
                   aria-label={`Start navigation to ${activeHotspot.name}`}
                 >
                   <Navigation size={16} aria-hidden="true" /> Start Navigation
